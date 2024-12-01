@@ -93,7 +93,7 @@ func (w *WorkerPrivate) RequestTask() TaskResponse {
 	w.logger.Printf("[RequestTask] Requesting a task from the coordinator...")
 	ok := call("Coordinator.AssignTask", &args, &reply)
 	if !ok {
-		log.Fatalf("[RequestTask] Worker failed to contact coordinator")
+		w.logger.Fatalf("[RequestTask] Worker failed to contact coordinator")
 	}
 	w.logger.Printf("[RequestTask] Received response: %+v\n", reply)
 	return reply
@@ -104,7 +104,7 @@ func (w *WorkerPrivate) PerformMapTask(task TaskResponse, mapf func(string, stri
 	w.logger.Printf("[PerformMapTask] Reading input file: %s\n", task.FileName)
 	content, err := ioutil.ReadFile(task.FileName)
 	if err != nil {
-		log.Fatalf("[PerformMapTask] Failed to read input file %v: %v", task.FileName, err)
+		w.logger.Fatalf("[PerformMapTask] Failed to read input file %v: %v", task.FileName, err)
 	}
 
 	intermediate := mapf(task.FileName, string(content))
@@ -122,13 +122,13 @@ func (w *WorkerPrivate) PerformMapTask(task TaskResponse, mapf func(string, stri
 		w.logger.Printf("[PerformMapTask] Writing to file: %s\n", outputFile)
 		file, err := os.Create(outputFile)
 		if err != nil {
-			log.Fatalf("[PerformMapTask] Failed to create output file %v: %v", outputFile, err)
+			w.logger.Fatalf("[PerformMapTask] Failed to create output file %v: %v", outputFile, err)
 		}
 		enc := json.NewEncoder(file)
 		for _, kv := range buckets[i] {
 			err := enc.Encode(&kv)
 			if err != nil {
-				log.Fatalf("[PerformMapTask] Failed to write key-value pair to file %v: %v", outputFile, err)
+				w.logger.Fatalf("[PerformMapTask] Failed to write key-value pair to file %v: %v", outputFile, err)
 			}
 		}
 		file.Close()
@@ -147,7 +147,7 @@ func (w *WorkerPrivate) PerformReduceTask(task TaskResponse, reducef func(string
 		w.logger.Printf("[PerformReduceTask] Opening file: %s\n", inputFile)
 		file, err := os.Open(inputFile)
 		if err != nil {
-			log.Fatalf("[PerformReduceTask] Failed to open input file %v: %v", inputFile, err)
+			w.logger.Fatalf("[PerformReduceTask] Failed to open input file %v: %v", inputFile, err)
 		}
 		dec := json.NewDecoder(file)
 		for {
@@ -170,7 +170,7 @@ func (w *WorkerPrivate) PerformReduceTask(task TaskResponse, reducef func(string
 	w.logger.Printf("[PerformReduceTask] Writing reduce output to file: %s\n", outputFile)
 	file, err := os.Create(outputFile)
 	if err != nil {
-		log.Fatalf("[PerformReduceTask] Failed to create output file %v: %v", outputFile, err)
+		w.logger.Fatalf("[PerformReduceTask] Failed to create output file %v: %v", outputFile, err)
 	}
 
 	i := 0
@@ -198,7 +198,7 @@ func (w *WorkerPrivate) ReportTaskCompletion(taskType string, taskID int) {
 	w.logger.Printf("[ReportTaskCompletion] Reporting task completion: Type=%s, ID=%d\n", taskType, taskID)
 	ok := call("Coordinator.MarkTaskCompleted", &args, &reply)
 	if !ok {
-		log.Fatalf("[ReportTaskCompletion] Failed to report task completion to coordinator")
+		w.logger.Fatalf("[ReportTaskCompletion] Failed to report task completion to coordinator")
 	}
 }
 
