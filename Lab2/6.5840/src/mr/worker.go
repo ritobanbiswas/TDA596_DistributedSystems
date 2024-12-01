@@ -8,8 +8,8 @@ import (
 	"log"
 	"net/rpc"
 	"os"
-	"path/filepath"
 	"sort"
+	"strconv"
 
 	mylogger "github.com/ritobanbiswas/TDA596_mygologger"
 )
@@ -43,10 +43,13 @@ func Worker(mapf func(string, string) []KeyValue,
 	reducef func(string, []string) string) {
 
 	const logdirname = "/var/tmp/"
+	logfilename := "mr-workerfile"
+	logfilename += strconv.Itoa(os.Getpid())
+	logfilename += ".log"
 	logger, flog, _ := mylogger.MyLogger(
 		logdirname,
-		"mr-workerfile.log",
-		os.Args[1],
+		logfilename,
+		currentFunction(),
 	)
 	defer flog.Close()
 	w := WorkerPrivate{
@@ -73,6 +76,9 @@ func Worker(mapf func(string, string) []KeyValue,
 			w.logger.Printf("[Worker] Starting reduce task: ID=%d\n", task.TaskID)
 			w.PerformReduceTask(task, reducef)
 			w.logger.Printf("[Worker] Completed reduce task: ID=%d\n", task.TaskID)
+		} else {
+			w.logger.Printf("[Worker] No Assigned Task\n")
+			continue
 		}
 		w.ReportTaskCompletion(task.TaskType, task.TaskID)
 		w.logger.Printf("[Worker] Reported completion of task: Type=%s, ID=%d\n", task.TaskType, task.TaskID)
@@ -112,7 +118,7 @@ func (w *WorkerPrivate) PerformMapTask(task TaskResponse, mapf func(string, stri
 
 	for i := 0; i < task.NReduce; i++ {
 		outputFile := fmt.Sprintf("mr-%d-%d", task.TaskID, i)
-		outputFile = filepath.Join(w.logdirname, outputFile)
+		//outputFile = filepath.Join(w.logdirname, outputFile)
 		w.logger.Printf("[PerformMapTask] Writing to file: %s\n", outputFile)
 		file, err := os.Create(outputFile)
 		if err != nil {
@@ -137,7 +143,7 @@ func (w *WorkerPrivate) PerformReduceTask(task TaskResponse, reducef func(string
 	w.logger.Printf("task.NFiles is = %d\n", task.NFiles)
 	for i := 0; i < task.NFiles; /* len(files) /*task.NReduce*/ i++ {
 		inputFile := fmt.Sprintf("mr-%d-%d", i, task.TaskID)
-		inputFile = filepath.Join(w.logdirname, inputFile)
+		//inputFile = filepath.Join(w.logdirname, inputFile)
 		w.logger.Printf("[PerformReduceTask] Opening file: %s\n", inputFile)
 		file, err := os.Open(inputFile)
 		if err != nil {
@@ -160,7 +166,7 @@ func (w *WorkerPrivate) PerformReduceTask(task TaskResponse, reducef func(string
 	w.logger.Printf("[PerformReduceTask] Sorted %d key-value pairs\n", len(intermediate))
 
 	outputFile := fmt.Sprintf("mr-out-%d", task.TaskID)
-	outputFile = filepath.Join(w.logdirname, outputFile)
+	//outputFile = filepath.Join(w.logdirname, outputFile)
 	w.logger.Printf("[PerformReduceTask] Writing reduce output to file: %s\n", outputFile)
 	file, err := os.Create(outputFile)
 	if err != nil {

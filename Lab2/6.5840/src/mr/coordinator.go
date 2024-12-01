@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -37,26 +38,6 @@ type Coordinator struct {
 	Mutex          sync.Mutex // Ensures thread-safe access
 	logger         *log.Logger
 	AllTasksDone   bool
-}
-
-type TaskRequest struct {
-	WorkerID int
-}
-
-type TaskResponse struct {
-	TaskType string
-	FileName string
-	TaskID   int
-	NReduce  int
-	//ReduceID int
-	NFiles  int
-	AllDone bool
-}
-
-type TaskCompleteArgs struct {
-	TaskType string
-	TaskID   int
-	WorkerID int
 }
 
 // AssignTask assigns a task to a worker or indicates if all tasks are complete.
@@ -207,10 +188,13 @@ func (c *Coordinator) server() {
 // MakeCoordinator initializes the coordinator with map tasks and reduce tasks.
 func MakeCoordinator(files []string, nReduce int) *Coordinator {
 	const logdirname = "/var/tmp/"
+	logfilename := "mr-coordinator"
+	logfilename += strconv.Itoa(os.Getpid())
+	logfilename += ".log"
 	logger, flog, _ := mylogger.MyLogger(
 		logdirname,
-		"mr-coordinatorfile.log",
-		os.Args[1],
+		logfilename,
+		currentFunction(),
 	)
 	defer flog.Close()
 	logger.Printf("\n\n\n\n<============================>\n")
